@@ -28,12 +28,12 @@ var cursorOperators = {
  * 1. The simplest way is to just invoke the module and pass in your mongoskin
  * arguments as arguments to the module function. For example:
  *
- * var db = require('livedb-mongo')('localhost:27017/test?auto_reconnect', {safe:true});
+ * var db = require('livedb-mongo')('mongodb://localhost:27017/test?auto_reconnect', {safe:true});
  *
  * 2. If you already have a mongoskin instance that you want to use, you can
  * just pass it into livedb-mongo:
  *
- * var skin = require('mongoskin')('localhost:27017/test?auto_reconnect', {safe:true});
+ * var skin = require('mongoskin')('mongodb://localhost:27017/test?auto_reconnect', {safe:true});
  * var db = require('livedb-mongo')(skin);
  */
 exports = module.exports = function(mongo, options) {
@@ -47,7 +47,7 @@ exports = module.exports = function(mongo, options) {
 exports.LiveDbMongo = LiveDbMongo;
 
 // mongo is a mongoskin client. Create with:
-// mongo.db('localhost:27017/tx?auto_reconnect', safe:true)
+// mongo.db('mongodb://localhost:27017/tx?auto_reconnect', safe:true)
 function LiveDbMongo(mongo, options) {
   this.mongo = mongo;
   this.closed = false;
@@ -57,6 +57,10 @@ function LiveDbMongo(mongo, options) {
   }
   if (options && options.cleanupOps) {
     this.cleanupOps = options.cleanupOps;
+  }
+
+  if (options && options.indexOptions) {
+    this.indexOptions = options.indexOptions;
   }
 
   // The getVersion() and getOps() methods depend on a collectionname_ops
@@ -173,7 +177,7 @@ LiveDbMongo.prototype._opCollection = function(cName) {
   var collection = this.mongo.collection(name);
 
   if (!this.opIndexes[cName]) {
-    collection.ensureIndex({name: 1, v: 1}, true, function(error, name) {
+    collection.ensureIndex({name: 1, v: 1}, this.indexOptions, function(error, name) {
       if (error) console.warn('Warning: Could not create index for op collection:', error.stack || error);
     });
     if (this.cleanupOps) {
@@ -464,5 +468,3 @@ function projectionFromFields(fields) {
 
   return projection;
 }
-
-
